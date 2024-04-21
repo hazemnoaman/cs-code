@@ -1,0 +1,87 @@
+import math
+import random
+import time
+
+def is_prime(n):
+    if n <= 1:
+        return False
+    if n <= 3:
+        return True
+    if n % 2 == 0 or n % 3 == 0:
+        return False
+    i = 5
+    while i * i <= n:
+        if n % i == 0 or n % (i + 2) == 0:
+            return False
+        i += 6
+    return True
+
+def generate_prime(bits):
+    while True:
+        p = random.getrandbits(bits)
+        if is_prime(p):
+            return p
+
+def mod_inverse(a, m):
+    m0, x0, x1 = m, 0, 1
+    while a > 1:
+        q = a // m
+        m, a = a % m, m
+        x0, x1 = x1 - q * x0, x0
+    return x1 + m0 if x1 < 0 else x1
+
+def generate_keypair(bits):
+    p = generate_prime(bits // 2)
+    q = generate_prime(bits // 2)
+    N = p * q
+    phi = (p - 1) * (q - 1)
+    e = 65537
+    d = mod_inverse(e, phi)
+    return N, e, d, p, q
+
+def factor_modulus(N, e):
+    p = smallest_prime_factor(N)
+    q = N // p
+    phi = (p - 1) * (q - 1)
+    d = mod_inverse(e, phi)
+    return d
+
+def smallest_prime_factor(n):
+    for i in range(2, int(math.sqrt(n)) + 1):
+        if n % i == 0:
+            return i
+    return n
+
+def brute_force_private_exponent(N, e, p, q):
+    start_time = time.perf_counter()
+    i = 2
+    while True:
+        if (e*i) % ((p-1)*(q-1)) == 1:
+            end_time = time.perf_counter()
+            runtime = end_time - start_time
+            print(f"Found private exponent {i} in {runtime:.9f} seconds")
+            return i, runtime
+        i += 1
+
+def main():
+    # Public exponent
+    e = 65537
+
+    # Test cases for 8-bit moduli
+    print("8-bit Moduli:")
+    for _ in range(4):
+        N, _, _, p, q = generate_keypair(8)
+        d_factored = mod_inverse(e, (p-1)*(q-1))
+        d_brute_force, runtime = brute_force_private_exponent(N, e, p, q)
+        print(f"Modulus: {N}, Private Exponent (Factored): {d_factored}, Private Exponent (Brute Force): {d_brute_force}, Runtime: {runtime:.9f} seconds")
+
+    # Test cases for 16-bit moduli
+    print("\n16-bit Moduli:")
+    for _ in range(4):
+        N, _, _, p, q = generate_keypair(16)
+        d_factored = mod_inverse(e, (p-1)*(q-1))
+        d_brute_force, runtime = brute_force_private_exponent(N, e, p, q)
+        print(f"Modulus: {N}, Private Exponent (Factored): {d_factored}, Private Exponent (Brute Force): {d_brute_force}, Runtime: {runtime:.9f} seconds")
+
+if __name__ == "__main__":
+    main()
